@@ -1,0 +1,31 @@
+data:
+  start: "2012-01-01"
+  end: "2026-06-30"
+  target: gold_next_day_direction
+  nodes: [gold, usd, bonds, equities, oil]
+  news_cutoff_ny: "17:00"     # after this -> next day
+split:                        # walk-forward, time-ordered only
+  train_end: "2019-12-31"
+  val_end: "2021-12-31"
+  test_end: "2026-06-30"
+model:
+  lookback: 30
+  hidden: 64
+  dropout: 0.3
+train:
+  lr: 0.001
+  batch_size: 64
+  epochs: 50
+  early_stop: 8
+  seeds: [0, 1, 2, 3, 4]
+reaction:
+  resolution: daily           # daily | intraday
+  intraday_windows_min: [5, 60, 1440]
+  pre_event_min: 60
+  latency_threshold_sigma: 2.0
+reaction:
+  window_pre_min: 60          # minutes before event
+  window_end: day_close       # ends at day-t close; target is t -> t+1
+  checkpoints_min: [5, 60]
+  latency_threshold_std: 2.0
+  decay_lambda: 0.3
