@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 2 (events, regimes)
+Current phase: 3 (baselines)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates.
@@ -18,3 +18,13 @@ Current phase: 2 (events, regimes)
 - `daily.parquet`: **3,481 rows**, 2013-01-02 → 2026-06-30, **0 NaNs**. Inside the period no rows were dropped (only the warm-up first row 2012-06-01 and the final row without t+1). `daily_ext.parquet` keeps 2012-06 warm-up history for rolling features/windows.
 - `y_next` up-rate: train 50.6% (1,805), val 55.1% (517), test 53.3% (1,159).
 - corr(gold_ret, usd_ret) = **−0.416** (negative ✅). Plot: `reports/figures/phase1_prices.png`.
+
+## Phase 2: events and regimes ✅
+- **433 events** (FOMC 111, CPI 161, NFP 161). Per year: FOMC 8 (2019: 9, 2020: 10 incl. unscheduled), CPI/NFP 12 per year; 2025 has 11 each (Oct-2025 government shutdown: October CPI cancelled, Oct+Nov jobs combined); 2026 = Jan–Jun only.
+- Unscheduled FOMC actions with real times from the press releases: 2019-10-11 11:00, 2020-03-03 10:00, 2020-03-15 17:00 (Sunday → trading day 2020-03-16), 2020-03-23 08:00. Excluded (no rate decision in text): 2020-03-31, 2020-08-27, 2025-08-22.
+- 2013–2015 press releases print no release time → default 14:00 ET, **verified from data**: on those 24 FOMC days mean |h1 gold return| is 67 bp·1e-2 in the 14:00 bar vs 10–16 in the 11:00–13:00 bars (12:30 releases would spike the 12:00 bar).
+- CPI/NFP: 10 CPI seasonal-revision vintages (Feb) and 1 NFP vintage removed by the "must add a new month" rule. 7 events on non-trading days moved to the next trading day (logged in `data/interim/events_log.txt`). 10 trading days carry 2 events.
+- Spot-checks (vs official pages): FOMC 2020-03-15 17:00 ET cut to 0–1/4% ✓; FOMC 2022-06-15 14:00 to 1½–1¾% ✓; FOMC 2013-06-19 14:00 held 0–1/4% ✓; CPI 2022-07-13 June index 295.328 vs 291.474 ✓; NFP 2020-05-08 131,072k vs 151,572k (−20.5M) ✓.
+- Decision D2.1: HMM labels are decoded with the forward (filtering) recursion, not Viterbi/forward-backward, so day-t labels never use later data. Inputs standardised with train mean/std.
+- Decision D2.2: ALFRED returns transient 404s and drops browser-like user agents → plain UA + retry; pages forced to UTF-8.
+- Regimes (2013–2026-06): vol-percentile calm 786 / normal 1245 / volatile 1145 / crisis 305; HMM calm 1151 / normal 1431 / volatile 899. **Cohen's κ = 0.602**. March 2020: 100% volatile/crisis in both. Plot: `reports/figures/phase2_regimes.png`.
