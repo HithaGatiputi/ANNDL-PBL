@@ -37,7 +37,7 @@ def build_model(cfg: dict, d: DayData) -> nn.Module:
     m = cfg["model"]
     if m["type"] == "lstm":
         e_dim = d.E.shape[2] if m["use_event_emb"] else 0
-        return LSTMBaseline(d.X.shape[3], m["lstm_hidden"], m["dropout"], e_dim)
+        return LSTMBaseline(d.X.shape[3], m["lstm_hidden"], m["lstm_dropout"], e_dim)
     if m["type"] == "rcdgnn":
         from src.models.rc_dgnn import RCDGNN
         return RCDGNN(cfg, f_dim=d.X.shape[3], s_dim=d.S.shape[2], e_dim=d.E.shape[2], g_dim=d.G.shape[1])

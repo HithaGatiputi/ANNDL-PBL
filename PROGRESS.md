@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 6 (static GNN, RC-DGNN)
+Current phase: 7 (intraday signatures)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates.
@@ -55,3 +55,19 @@ No baseline > 60% (no leakage alarm). LSTM early-stops at epochs 0–5: there is
 - Mean sentiment: CPI neg 0.69 (template text "index X vs prior Y" reads as negative to FinBERT — the CPI/NFP texts carry little semantic content; noted as a limitation), FOMC neutral 0.70, NFP neutral 0.59.
 - `baseline_lstm_news` (4,788 params): test acc **0.536 ± 0.011**, MCC 0.044 (vs baseline_lstm 0.538 ± 0.005).
 - Intraday 1-min download for Phase 7 started in the background (~25 files/min).
+
+## Phase 6: static GNN and RC-DGNN (daily) ✅ — null result
+- Architecture as specified (5-node graph in plain PyTorch, A = rowsoftmax(A_static + gate·ΔA + GAT), 2 residual graph layers, LSTM, MLP head, MC-dropout T=30). Tests: forward shapes + rows of A sum to 1 ✓, static variant ignores the signature ✓, **overfit test: 100% train acc on 64 samples** ✓.
+- D6.1 Both GNNs feed the day-t event embedding to the head, so the *only* difference static vs RC is the reaction-conditioned edges. L1 is applied to the effective change gate·ΔA.
+- D6.2 **Overfitting fix (plan §15)**: with the specified sizes (32/64, ~40k params) val loss rose from epoch 0–1 while train loss fell (`reports/results/_tuning/*_loss.png`). Switched both GNNs to hidden 16, dropout 0.4 (graph 0.3), L1 0.01. Selection on **validation only**: mean val log loss 0.6929 → 0.6924. Test metrics of tuning runs were not used. Params now: static 4,842, RC-DGNN 6,083.
+
+**Key comparison (test, 5 seeds):**
+
+| variant | all: acc | all: MCC | all: Brier | post-event (n=141): acc | post-event: MCC |
+|---|---|---|---|---|---|
+| baseline_lstm | 0.538 ± 0.005 | 0.036 | 0.249 | 0.489 ± 0.009 | 0.076 |
+| baseline_lstm_news | 0.535 ± 0.011 | 0.044 | 0.249 | 0.495 ± 0.020 | 0.034 |
+| static_gnn | 0.525 ± 0.015 | 0.014 | 0.249 | 0.492 ± 0.057 | 0.031 |
+| rcdgnn_daily | 0.517 ± 0.010 | 0.017 | 0.250 | 0.492 ± 0.029 | 0.013 |
+
+RC-DGNN (daily signature) does **not** beat the static GNN on all days or on post-event days; all neural models are at or below the majority rate (0.533). Significance tests follow in Phase 8.

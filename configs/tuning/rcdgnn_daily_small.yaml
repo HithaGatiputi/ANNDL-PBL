@@ -1,0 +1,13 @@
+inherit: base.yaml
+variant: rcdgnn_daily_small
+model:
+  type: rcdgnn
+  reaction_conditioned: true
+  signature_file: signatures_daily.parquet
+  node_hidden: 16
+  hidden: 16
+  head_hidden: 16
+  edge_hidden: 16
+  dropout: 0.4
+  gnn_dropout: 0.3
+  l1_delta_a: 0.01
