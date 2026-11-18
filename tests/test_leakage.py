@@ -113,3 +113,24 @@ def test_shuffled_labels_give_no_edge():
     majority = max(d.y[te].mean(), 1 - d.y[te].mean())
     print(f"shuffled-label test acc {np.round(accs, 3)} vs majority rate {majority:.3f}")
     assert np.mean(accs) <= majority + 0.03
+
+
+def test_event_signatures_and_decay_are_causal(daily_ext):
+    """Daily signature of an event on day t uses no data after t; decayed signature for day t
+    uses only events with trading_day <= t; expected reactions use train events only."""
+    from src.features.reaction_signature import decay_to_days, event_signatures_daily
+    ev = pd.read_csv(paths.EVENTS_CSV, parse_dates=["datetime_utc"])
+    some = ev[ev["event_id"].isin(["FOMC_20220615", "CPI_20200212", "NFP_20240503"])]
+    full_sig = event_signatures_daily(some, CFG, daily_ext).set_index("event_id")
+    for _, e in some.iterrows():
+        cut = event_signatures_daily(some[some.event_id == e.event_id], CFG,
+                                     daily_ext.loc[:e["trading_day"]]).set_index("event_id")
+        pd.testing.assert_series_equal(full_sig.loc[e.event_id], cut.loc[e.event_id])
+    ev_sig = pd.read_csv(paths.PROCESSED / "event_signatures_daily.csv", parse_dates=["datetime_utc"])
+    days = daily_ext.index
+    full = decay_to_days(ev_sig, days, CFG)
+    cut = "2023-03-10"
+    part = decay_to_days(ev_sig[ev_sig["trading_day"] <= cut], days[days <= cut], CFG)
+    pd.testing.assert_frame_equal(full.loc[:cut], part)
+    exp = json.loads(paths.EXPECTED_REACTIONS.read_text())
+    assert exp["_fitted_on"]["last_event_day"] <= CFG["split"]["train_end"]
