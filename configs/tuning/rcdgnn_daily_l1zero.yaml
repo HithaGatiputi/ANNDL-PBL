@@ -1,0 +1,7 @@
+inherit: base.yaml
+variant: rcdgnn_daily_l1zero
+model:
+  type: rcdgnn
+  reaction_conditioned: true
+  signature_file: signatures_daily.parquet
+  l1_delta_a: 0.0

@@ -24,10 +24,10 @@ def sig_sentence(sig: pd.DataFrame, a: str, b: str, subset: str) -> str:
     if r.empty:
         return f"{a} vs {b}: not available."
     r = r.iloc[0]
-    better = b if r.acc_b > r.acc_a else a
+    better = "tie" if abs(r.acc_b - r.acc_a) < 1e-9 else (f"{b} higher" if r.acc_b > r.acc_a else f"{a} higher")
     verdict = "significant at 5%" if r.significant_5pct else "**not significant**"
     return (f"{a} vs {b} ({subset}, n={r.n}, seed-ensembled): accuracy {r.acc_a:.3f} vs {r.acc_b:.3f} "
-            f"({better} higher), McNemar p = {r.mcnemar_p:.3f}; Brier {r.brier_a:.4f} vs {r.brier_b:.4f}, "
+            f"({better}), McNemar p = {r.mcnemar_p:.3f}; Brier {r.brier_a:.4f} vs {r.brier_b:.4f}, "
             f"Diebold–Mariano p = {r.dm_p:.3f} → {verdict}.")
 
 
@@ -72,6 +72,18 @@ def main() -> None:
                   f"- The largest average event-driven edge change on test event days is {mx.mean_dA:+.4f} "
                   f"({mx['type']}: {mx['from']} → {mx['to']}), on attention weights of about 0.2. The learned graph "
                   "barely reacts to events: the L1 penalty and the weak signal keep ΔA close to zero.", ""]
+    diag = [v for v in ["rcdgnn_daily_l1zero", "rcdgnn_full_l1zero"] if (paths.RESULTS / "_tuning" / v).exists()]
+    if diag:
+        import glob
+        import numpy as np
+        parts = []
+        for v in diag:
+            ms = [json.loads(open(f).read()) for f in sorted(glob.glob(str(paths.RESULTS / "_tuning" / v / "seed*/metrics.json")))]
+            parts.append(f"{v}: val log loss {np.mean([m['val']['all']['logloss'] for m in ms]):.4f}, "
+                         f"test acc {np.mean([m['test']['all']['acc'] for m in ms]):.3f}")
+        lines += ["- Diagnostic (not used for model choice): removing the L1 penalty makes the event-driven edge "
+                  "change ~5x larger but leaves validation loss unchanged (" + "; ".join(parts) + "). "
+                  "So the null result is not caused by the penalty.", ""]
     pi = paths.RESULTS / "permutation_importance.csv"
     if pi.exists():
         p = pd.read_csv(pi).head(3)

@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 8 (evaluation)
+Current phase: 9 (dashboard)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates. **Update:** key added later; the API's vintage dates were cross-checked against the scraped ALFRED list for 2012-10 → 2026-06: CPIAUCSL 174 = 174, PAYEMS 165 = 165, no differences.
@@ -80,3 +80,10 @@ RC-DGNN (daily signature) does **not** beat the static GNN on all days or on pos
 - Latency (plan definition: |move| > 2 × pre-event 1-min σ) is ~1 minute for most events, so it carries little information (noted).
 
 **Second key comparison (test, 5 seeds):** rcdgnn_daily 0.517 ± 0.010 (MCC 0.017) vs **rcdgnn_full 0.516 ± 0.010 (MCC 0.016)**; post-event 0.492 vs 0.489. Intraday reaction data did not help.
+
+## Phase 8: evaluation, significance, explainability ✅ (`make evaluate`, one command)
+- Outputs: `ablation_table.{csv,md}` (7 configs × 6 subsets × 6 metrics, + val), `significance.{csv,md}`, `event_analysis.md`, `backtest.md`, `SUMMARY.md`, `graph_change_by_type.csv`, `permutation_importance.csv`; figures `calibration.png`, `graph_change_<event>.png` (FOMC 2020-03-15, FOMC 2022-06-15, CPI 2022-11-10, NFP 2023-02-03), `graph_change_by_type.png`, `permutation_importance.png`.
+- **Significance (test, seed-ensembled): nothing is significant.** static vs rcdgnn_daily: acc 0.528 vs 0.528, McNemar p=1.00, DM p=0.39; post-event 0.461 vs 0.511, McNemar p=0.26. rcdgnn_daily vs full: p=1.00 / DM 0.30. baseline_lstm vs rcdgnn_full: 0.532 vs 0.529, p=0.86 / DM 0.47.
+- Why daily ≈ full: the signature files differ, but predictions differ by < 0.001 because the learned event edge change is tiny (largest mean test-event ΔA −0.0077 on weights ≈ 0.2; permutation importance of every signature feature ≈ 0; only the event embedding in the head has any (tiny) effect).
+- D8.1 Diagnostic (labelled, not used to choose the model): L1 = 0 → ΔA ~5× larger (event-day mean |ΔA| 0.012, max 0.11) but val log loss unchanged (0.6927/0.6928), test acc 0.515. The null result is **not** caused by the penalty. Runs kept in `reports/results/_tuning/`.
+- Backtest (simplified, not evidence of profit): no model beats buy-and-hold (Sharpe 0.96); RC-DGNN Sharpe −0.53.

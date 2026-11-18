@@ -34,3 +34,8 @@ Post-event = the trading day after an event of that type (test set). Stress peri
 | rcdgnn_daily       | post_event_NFP          |  53 | 0.562 ± 0.014 | 0.098 ± 0.044  | 0.248 ± 0.001 | 0.689 ± 0.002 |
 | rcdgnn_daily       | covid_2020-02_04 (val)  |  63 | 0.571 ± 0.053 | 0.090 ± 0.119  | 0.250 ± 0.001 | 0.692 ± 0.003 |
 | rcdgnn_daily       | hikes_2022-03_12 (test) | 217 | 0.500 ± 0.026 | 0.009 ± 0.060  | 0.251 ± 0.001 | 0.695 ± 0.001 |
+| rcdgnn_full        | post_event_FOMC         |  36 | 0.394 ± 0.044 | -0.141 ± 0.179 | 0.261 ± 0.005 | 0.716 ± 0.010 |
+| rcdgnn_full        | post_event_CPI          |  53 | 0.491 ± 0.065 | 0.013 ± 0.099  | 0.250 ± 0.004 | 0.693 ± 0.008 |
+| rcdgnn_full        | post_event_NFP          |  53 | 0.558 ± 0.009 | 0.095 ± 0.036  | 0.248 ± 0.001 | 0.689 ± 0.001 |
+| rcdgnn_full        | covid_2020-02_04 (val)  |  63 | 0.562 ± 0.059 | 0.076 ± 0.128  | 0.250 ± 0.001 | 0.693 ± 0.003 |
+| rcdgnn_full        | hikes_2022-03_12 (test) | 217 | 0.496 ± 0.023 | -0.001 ± 0.056 | 0.251 ± 0.001 | 0.696 ± 0.001 |
