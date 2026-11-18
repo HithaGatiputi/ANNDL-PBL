@@ -16,3 +16,4 @@ lxml
 yfinance
 python-dotenv
 statsmodels
+tabulate

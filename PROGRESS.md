@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 3 (baselines)
+Current phase: 4 (reaction signature)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates.
@@ -22,9 +22,23 @@ Current phase: 3 (baselines)
 ## Phase 2: events and regimes ✅
 - **433 events** (FOMC 111, CPI 161, NFP 161). Per year: FOMC 8 (2019: 9, 2020: 10 incl. unscheduled), CPI/NFP 12 per year; 2025 has 11 each (Oct-2025 government shutdown: October CPI cancelled, Oct+Nov jobs combined); 2026 = Jan–Jun only.
 - Unscheduled FOMC actions with real times from the press releases: 2019-10-11 11:00, 2020-03-03 10:00, 2020-03-15 17:00 (Sunday → trading day 2020-03-16), 2020-03-23 08:00. Excluded (no rate decision in text): 2020-03-31, 2020-08-27, 2025-08-22.
-- 2013–2015 press releases print no release time → default 14:00 ET, **verified from data**: on those 24 FOMC days mean |h1 gold return| is 67 bp·1e-2 in the 14:00 bar vs 10–16 in the 11:00–13:00 bars (12:30 releases would spike the 12:00 bar).
+- 2013–2015 press releases print no release time → default 14:00 ET, **verified from data**: on those 24 FOMC days mean |h1 gold return| is 67 bp in the 14:00–15:00 bar vs 10–16 bp in the 11:00–14:00 bars (12:30 releases would spike the 12:00 bar).
 - CPI/NFP: 10 CPI seasonal-revision vintages (Feb) and 1 NFP vintage removed by the "must add a new month" rule. 7 events on non-trading days moved to the next trading day (logged in `data/interim/events_log.txt`). 10 trading days carry 2 events.
 - Spot-checks (vs official pages): FOMC 2020-03-15 17:00 ET cut to 0–1/4% ✓; FOMC 2022-06-15 14:00 to 1½–1¾% ✓; FOMC 2013-06-19 14:00 held 0–1/4% ✓; CPI 2022-07-13 June index 295.328 vs 291.474 ✓; NFP 2020-05-08 131,072k vs 151,572k (−20.5M) ✓.
 - Decision D2.1: HMM labels are decoded with the forward (filtering) recursion, not Viterbi/forward-backward, so day-t labels never use later data. Inputs standardised with train mean/std.
 - Decision D2.2: ALFRED returns transient 404s and drops browser-like user agents → plain UA + retry; pages forced to UTF-8.
 - Regimes (2013–2026-06): vol-percentile calm 786 / normal 1245 / volatile 1145 / crisis 305; HMM calm 1151 / normal 1431 / volatile 899. **Cohen's κ = 0.602**. March 2020: 100% volatile/crisis in both. Plot: `reports/figures/phase2_regimes.png`.
+
+## Phase 3: baselines + leakage tests ✅
+- Dataset: X (30, 5 nodes, 3 feats), global G (RSI, MACD hist/price, VIX, ΔVIX, regime one-hot). StandardScaler fit on train rows only. Samples: train 1,805 / val 517 / test 1,159.
+- `tests/test_leakage.py`: **7/7 pass** — future-deletion (3 cut dates, X/S/E/G identical), regime+HMM causality, train-only fitting (perturbing val/test data leaves train features, thresholds and HMM unchanged), split target periods ordered, shuffled-label LSTM test acc 0.517/0.527 vs majority 0.533.
+- Majority/logreg are deterministic → 1 run (std 0). LSTM: 4,769 params, 5 seeds.
+
+| variant | subset | n | acc | MCC | Brier |
+|---|---|---|---|---|---|
+| baseline_majority | all | 1159 | 0.533 | 0.000 | 0.250 |
+| baseline_logreg | all | 1159 | 0.517 | 0.033 | 0.249 |
+| baseline_lstm | all | 1159 | 0.538 ± 0.005 | 0.036 ± 0.024 | 0.249 |
+| baseline_lstm | post_event | 141 | 0.489 ± 0.009 | 0.076 ± 0.052 | 0.251 |
+
+No baseline > 60% (no leakage alarm). LSTM early-stops at epochs 0–5: there is very little learnable signal.

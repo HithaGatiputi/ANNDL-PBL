@@ -68,9 +68,13 @@ def fit_hmm(X_train: np.ndarray, cfg: dict) -> GaussianHMM:
     return m
 
 
-def build_regimes(cfg: dict) -> tuple[pd.DataFrame, dict]:
-    """Compute both regime labels on the extended daily table (warm-up rows included)."""
-    df = pd.read_parquet(paths.INTERIM / "daily_ext.parquet")
+def build_regimes(cfg: dict, df: pd.DataFrame | None = None) -> tuple[pd.DataFrame, dict]:
+    """Compute both regime labels on the extended daily table (warm-up rows included).
+
+    `df` can be passed in (used by the leakage tests); by default daily_ext.parquet is read.
+    """
+    if df is None:
+        df = pd.read_parquet(paths.INTERIM / "daily_ext.parquet")
     vol = rolling_vol(df["gold_ret"], cfg["regime"]["vol_window"])
     train = (split_of(df.index, cfg) == "train") & vol.notna().values
     th = vol_thresholds(vol, train, cfg)
