@@ -6,3 +6,8 @@ __pycache__/
 *.pt
 .env
 .ipynb_checkpoints/
+logs/
+.venv/
+.caffeinate.pid
+.DS_Store
+.dukascopy-cache/

@@ -1,31 +1,77 @@
+# Base configuration: every variant config is merged on top of this file.
 data:
-  start: "2012-01-01"
+  start: "2013-01-01"          # FOMC statement times consistent (14:00 ET) from 2013
   end: "2026-06-30"
   target: gold_next_day_direction
   nodes: [gold, usd, bonds, equities, oil]
-  news_cutoff_ny: "17:00"     # after this -> next day
-split:                        # walk-forward, time-ordered only
+  close_time_ny: "17:00"       # trading day t closes at 17:00 New York
+  news_cutoff_ny: "17:00"      # text after this -> next trading day
+  max_ffill_days: 2            # forward-fill limit for non-gold series
+  download_start: "2012-06-01" # extra history so rolling features exist on 2013-01-01
+split:                         # fixed, time-ordered
   train_end: "2019-12-31"
   val_end: "2021-12-31"
   test_end: "2026-06-30"
+features:
+  roll_short: 5                # 5-day rolling return
+  roll_vol: 20                 # 20-day rolling volatility
+  rsi_period: 14
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+regime:
+  vol_window: 20
+  pct_calm: 33
+  pct_volatile: 67
+  pct_crisis: 95
+  hmm_states: 3
+  hmm_seed: 0
+  hmm_iter: 200
 model:
+  type: rcdgnn                 # majority | logreg | lstm | rcdgnn
   lookback: 30
+  node_hidden: 32
   hidden: 64
+  head_hidden: 32
+  edge_hidden: 32
+  gnn_layers: 2
+  gnn_dropout: 0.2
   dropout: 0.3
+  lstm_hidden: 32              # baseline LSTM
+  reaction_conditioned: true
+  use_event_emb: true
+  signature_file: signatures_daily.parquet
+  l1_delta_a: 0.001
+  mc_samples: 30
+  leaky_slope: 0.2
 train:
   lr: 0.001
+  weight_decay: 0.0001
   batch_size: 64
   epochs: 50
   early_stop: 8
   seeds: [0, 1, 2, 3, 4]
+  logreg_C: 1.0
+  logreg_lags: 5
 reaction:
-  resolution: daily           # daily | intraday
-  intraday_windows_min: [5, 60, 1440]
-  pre_event_min: 60
-  latency_threshold_sigma: 2.0
-reaction:
-  window_pre_min: 60          # minutes before event
-  window_end: day_close       # ends at day-t close; target is t -> t+1
+  pre_event_min: 60            # window starts 60 min before event
+  window_end: day_close        # ends at 17:00 ET on day t; target is t -> t+1
   checkpoints_min: [5, 60]
   latency_threshold_std: 2.0
+  persistence_clip: 2.0
   decay_lambda: 0.3
+  decay_max_days: 10
+  max_missing_frac: 0.2        # intraday window flagged if >20% minutes missing
+  cross_assets: [usd, equities, oil]
+events:
+  fomc_time_ny: "14:00"
+  macro_time_ny: "08:30"
+  min_days_between_releases: 20   # filters benchmark-revision vintages
+text:
+  model_name: ProsusAI/finbert
+  max_tokens: 512
+  pca_dim: 16
+eval:
+  ece_bins: 10
+  backtest_threshold: 0.55
+  backtest_cost_bp: 2

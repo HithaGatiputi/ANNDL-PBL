@@ -1,2 +1,6 @@
 inherit: base.yaml
 variant: rcdgnn_daily
+model:
+  type: rcdgnn
+  reaction_conditioned: true
+  signature_file: signatures_daily.parquet

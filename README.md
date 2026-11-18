@@ -108,14 +108,14 @@ Between events, the signature decays: `s_t = s_event · exp(−λ · days_since_
 | CPI / NFP release dates | Event | BLS release calendar | 8:30 AM New York |
 | Geopolitical / general news | Event | GDELT 2.0 (2015+) | 15-min timestamps, tone scores |
 
-**Period:** 2012–2026 (~3,500 trading days). **Events:** ~30/year (8 FOMC + 12 CPI + 12 NFP) → ~400 events, plus GDELT spikes.
+**Period:** 2013-01-01 to 2026-06-30 (~3,400 trading days). **Events:** ~30/year (8 FOMC + 12 CPI + 12 NFP) → ~400 events, plus GDELT spikes.
 
 Intraday data is downloaded **only for event windows**, not the full history.
 
 ## 6. Leakage Rules (non-negotiable)
 
 1. **Reaction window ends at the day-t close; target is the day t → t+1 direction.** No overlap.
-2. **Time-ordered splits only:** Train 2012–2019, Val 2020–2021, Test 2022–2026.
+2. **Time-ordered splits only:** Train 2013–2019, Val 2020–2021, Test 2022-01 to 2026-06.
 3. **News cutoff:** published before the day-t close (17:00 New York) → day t; after → day t+1. Date-only sources → lag 1 day.
 4. **Fitted on training data only:** expected reactions per event type, scalers, regime thresholds, HMM, static adjacency.
 5. `tests/test_leakage.py` asserts every feature timestamp < target start.

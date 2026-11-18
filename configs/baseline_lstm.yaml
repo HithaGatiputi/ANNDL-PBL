@@ -1,2 +1,6 @@
 inherit: base.yaml
 variant: baseline_lstm
+model:
+  type: lstm
+  use_event_emb: false
+  reaction_conditioned: false

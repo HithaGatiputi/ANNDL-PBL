@@ -1,0 +1,6 @@
+inherit: base.yaml
+variant: baseline_majority
+model:
+  type: majority
+  use_event_emb: false
+  reaction_conditioned: false

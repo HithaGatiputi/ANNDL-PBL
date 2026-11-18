@@ -1,2 +1,6 @@
 inherit: base.yaml
 variant: static_gnn
+model:
+  type: rcdgnn
+  reaction_conditioned: false
+  use_event_emb: true

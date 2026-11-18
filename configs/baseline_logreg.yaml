@@ -1,0 +1,6 @@
+inherit: base.yaml
+variant: baseline_logreg
+model:
+  type: logreg
+  use_event_emb: false
+  reaction_conditioned: false

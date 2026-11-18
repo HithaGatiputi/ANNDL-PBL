@@ -1,2 +1,0 @@
-inherit: base.yaml
-variant: rc_dgnn_daily
