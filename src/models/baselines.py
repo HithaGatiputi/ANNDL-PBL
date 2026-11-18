@@ -13,10 +13,12 @@ class MajorityBaseline:
     """Always predicts the train-split majority class; P(up) = train up-rate."""
 
     def fit(self, y_train: np.ndarray) -> "MajorityBaseline":
+        """Store the train up-rate."""
         self.rate = float(np.mean(y_train))
         return self
 
     def predict_proba(self, n: int) -> np.ndarray:
+        """Constant P(up) for n days."""
         return np.full(n, self.rate)
 
 
@@ -33,10 +35,12 @@ class LogRegBaseline:
         self.model = LogisticRegression(C=C, max_iter=2000)
 
     def fit(self, X, G, y) -> "LogRegBaseline":
+        """Fit on train windows X, global features G and labels y."""
         self.model.fit(logreg_features(X, G, self.lags), y)
         return self
 
     def predict_proba(self, X, G) -> np.ndarray:
+        """P(up) for each sample."""
         return self.model.predict_proba(logreg_features(X, G, self.lags))[:, 1]
 
 
@@ -51,6 +55,7 @@ class LSTMBaseline(nn.Module):
         self.head = nn.Linear(hidden + e_dim, 1)
 
     def forward(self, batch: dict) -> dict:
+        """batch with X (B,L,N,F) and E -> logit (B,) and a zero penalty."""
         x = batch["X"][:, :, GOLD, :]                # (B, L, F)
         _, (h, _) = self.lstm(x)
         z = h[-1]

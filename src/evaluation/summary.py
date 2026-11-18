@@ -10,16 +10,19 @@ from src.utils import paths
 
 
 def fmt(tab: pd.DataFrame, v: str, s: str, m: str) -> str:
+    """'mean ± std' string for variant v, subset s, metric m."""
     r = tab[(tab.variant == v) & (tab.subset == s)]
     return "n/a" if r.empty else f"{r[m + '_mean'].iloc[0]:.3f} ± {r[m + '_std'].iloc[0]:.3f}"
 
 
 def val(tab, v, s, m) -> float:
+    """Mean value for variant v, subset s, metric m."""
     r = tab[(tab.variant == v) & (tab.subset == s)]
     return float("nan") if r.empty else float(r[m + "_mean"].iloc[0])
 
 
 def sig_sentence(sig: pd.DataFrame, a: str, b: str, subset: str) -> str:
+    """One plain-English sentence for a significance-test row."""
     r = sig[(sig.model_a == a) & (sig.model_b == b) & (sig.subset == subset)]
     if r.empty:
         return f"{a} vs {b}: not available."
@@ -32,6 +35,7 @@ def sig_sentence(sig: pd.DataFrame, a: str, b: str, subset: str) -> str:
 
 
 def main() -> None:
+    """Generate SUMMARY.md."""
     tab = pd.read_csv(paths.RESULTS / "ablation_table.csv")
     sig = pd.read_csv(paths.RESULTS / "significance.csv")
     variants = tab.variant.unique().tolist()

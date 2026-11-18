@@ -67,6 +67,7 @@ def build_table(cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     lim = cfg["data"]["max_ffill_days"]
 
     def align(s: pd.Series) -> pd.Series:
+        """Reindex to gold trading days, forward-fill at most `lim` days."""
         return s[~s.index.duplicated()].reindex(cal).ffill(limit=lim)
 
     bonds = pd.read_csv(paths.RAW_DAILY / "bonds_DGS10.csv")

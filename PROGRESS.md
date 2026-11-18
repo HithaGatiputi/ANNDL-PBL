@@ -1,7 +1,16 @@
 # PROGRESS
 
+## FINAL SUMMARY (all phases 0–10 complete)
+- **Main hypothesis not supported (null result).** Test 2022-01 → 2026-06 (1,159 days), 5 seeds: static_gnn 0.525 ± 0.015 acc, rcdgnn_daily 0.517 ± 0.010, rcdgnn_full 0.516 ± 0.010; best is baseline_lstm 0.538 ± 0.005 vs majority 0.533. No pairwise difference significant (McNemar / Diebold–Mariano p ≥ 0.26), also on post-event days.
+- The learned graph barely reacts to events (mean event-driven ΔA ≤ 0.008 on weights ≈ 0.2); removing the L1 penalty does not change validation loss → events carry no usable next-day signal here.
+- Data: 3,481 days, 433 events (FOMC 111, CPI 161, NFP 161), 98.4% with valid 1-minute windows. All leakage tests pass (10), 16/16 tests total.
+- `make all` re-ran the whole pipeline from raw data: ablation and significance tables reproduced **exactly** (max abs diff 0.0).
+- Deliverables: `reports/results/SUMMARY.md`, `ablation_table.md`, `significance.md`, figures in `reports/figures/`, dashboard `app/dashboard.py`, `README.md` (results + limitations), `docs/VIVA_NOTES.md`.
+- Sleep blocker (caffeinate) stopped.
+
+
 ## Status
-Current phase: 10 (docs)
+Current phase: done
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates. **Update:** key added later; the API's vintage dates were cross-checked against the scraped ALFRED list for 2012-10 → 2026-06: CPIAUCSL 174 = 174, PAYEMS 165 = 165, no differences.
@@ -91,3 +100,7 @@ RC-DGNN (daily signature) does **not** beat the static GNN on all days or on pos
 ## Phase 9: dashboard ✅
 - `streamlit run app/dashboard.py` (or `make dashboard`): Forecast (P(up), MC band, regime, last event + days since, outcome), Graph (5-node graph day before / event day / selected day + event-driven ΔA table), Event explorer (1-min gold path with checkpoints, signature, expected vs actual), Results (SUMMARY, tables, calibration, graph and importance figures). Reads saved files only.
 - Verified with Streamlit `AppTest`: all 4 pages × 2 models run with 0 exceptions, 0.2–1.2 s per page (< 5 s).
+
+## Phase 10: documentation and cleanup ✅
+- README updated (architecture as built, exact sources/dates, results table, findings, limitations incl. consensus-forecast and bond-intraday gaps). Docstrings added to every public function (AST check: 0 missing). `docs/VIVA_NOTES.md` written from actual results.
+- `make all` from raw data: data → features → 7 configs → evaluate → tests; outputs identical to the earlier run; `pytest` 16 passed.

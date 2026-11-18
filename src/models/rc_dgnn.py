@@ -42,6 +42,7 @@ class RCDGNN(nn.Module):
         self.head = DirectionHead(m["hidden"] + g_dim + self.e_dim, m["head_hidden"], m["dropout"])
 
     def forward(self, batch: dict) -> dict:
+        """batch: X (B,L,N,F), S (B,L,Ds), E (B,L,De), G (B,Gd) -> logit, L1 penalty, last-day A, gate."""
         X, S, E, G = batch["X"], batch["S"], batch["E"], batch["G"]
         B, L, N, F = X.shape
         h = self.node_enc(X.reshape(B * L, N, F))                    # all days at once

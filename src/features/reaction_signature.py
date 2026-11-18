@@ -57,6 +57,7 @@ def compute_signature(paths: dict[str, pd.Series], event_time, pre_vol: dict[str
     end = gold.index[-1]
 
     def mag(move: float, minutes: float | None) -> float:
+        """Move divided by pre-event std scaled to the horizon (sigma * sqrt(minutes) intraday)."""
         steps = max(minutes, 1.0) if (intraday and minutes is not None) else 1.0
         return move / (sd * np.sqrt(steps)) if sd > 0 else np.nan
 

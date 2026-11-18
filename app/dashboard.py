@@ -34,11 +34,13 @@ def load_preds(variant: str) -> pd.DataFrame:
 
 @st.cache_data
 def load_sig(file: str) -> pd.DataFrame:
+    """Last event id and days since event per trading day."""
     return pd.read_parquet(paths.PROCESSED / file)[["last_event_id", "days_since_event"]]
 
 
 @st.cache_data
 def load_graph(variant: str):
+    """Saved adjacency matrices for every modelling day (from graph_viz)."""
     f = paths.PROCESSED / f"graph_{variant}.npz"
     if not f.exists():
         return None
@@ -48,6 +50,7 @@ def load_graph(variant: str):
 
 @st.cache_data
 def load_events() -> pd.DataFrame:
+    """The event calendar."""
     return pd.read_csv(paths.EVENTS_CSV)
 
 
