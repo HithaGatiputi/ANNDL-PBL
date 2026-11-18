@@ -90,11 +90,31 @@ def download_event_windows(cfg: dict) -> None:
     print(f"event windows finished; failed: {len(failed)} {failed[:10]}")
 
 
+def download_usd_fallback(cfg: dict) -> None:
+    """EUR/USD windows for events whose dollar-index window is empty or too sparse
+    (Dukascopy's dollaridxusd has gaps, mostly before 2018). Used with the sign inverted."""
+    from src.features.intraday_signature import load_window, window_quality
+    events = pd.read_csv(paths.EVENTS_CSV)
+    pre, max_miss = cfg["reaction"]["pre_event_min"], cfg["reaction"]["max_missing_frac"]
+    n = 0
+    for _, ev in events.iterrows():
+        start, end = event_window_utc(ev, pre)
+        miss, n_pre = window_quality(load_window(ev["event_id"], "usd", start, end), start, end,
+                                     pd.Timestamp(ev["datetime_utc"]))
+        out = paths.RAW_INTRADAY / f"{ev['event_id']}_eurusd.csv"
+        if (miss > max_miss or n_pre < 30) and not out.exists():
+            dukascopy_download("eurusd", start.strftime("%Y-%m-%d"),
+                               (end + pd.Timedelta(days=1)).strftime("%Y-%m-%d"), "m1", out)
+            n += 1
+    print(f"eurusd fallback windows downloaded: {n}")
+
+
 def main() -> None:
     """CLI entry point."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--gold-hourly", action="store_true")
     ap.add_argument("--events", action="store_true")
+    ap.add_argument("--usd-fallback", action="store_true")
     args = ap.parse_args()
     cfg = load_config("base")
     paths.ensure_dirs()
@@ -102,6 +122,9 @@ def main() -> None:
         download_gold_hourly(cfg)
     if args.events:
         download_event_windows(cfg)
+        download_usd_fallback(cfg)
+    if args.usd_fallback:
+        download_usd_fallback(cfg)
 
 
 if __name__ == "__main__":

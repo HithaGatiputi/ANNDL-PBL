@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 7 (intraday signatures)
+Current phase: 7 (intraday signatures) — 1-min download running in background
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates.

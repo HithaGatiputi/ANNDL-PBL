@@ -20,11 +20,11 @@ MIN_PRE_BARS = 30
 def load_window(event_id: str, asset: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.Series:
     """Close prices indexed by 1-min bar END time (UTC), restricted to [start, end]."""
     f = paths.RAW_INTRADAY / f"{event_id}_{asset}.csv"
-    if not f.exists():
-        return pd.Series(dtype=float)
+    if not f.exists() or f.stat().st_size == 0:  # Dukascopy has no data for that day
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([], tz="UTC"))
     df = pd.read_csv(f)
     if df.empty:
-        return pd.Series(dtype=float)
+        return pd.Series(dtype=float, index=pd.DatetimeIndex([], tz="UTC"))
     idx = pd.to_datetime(df["timestamp"], unit="ms", utc=True) + pd.Timedelta(minutes=1)
     s = pd.Series(df["close"].values.astype(float), index=idx)
     return s[(s.index >= start) & (s.index <= end)]
@@ -48,8 +48,14 @@ def event_signatures_intraday(events: pd.DataFrame, cfg: dict, return_quality: b
         win = {a: load_window(ev["event_id"], a, start, end) for a in ["gold"] + CROSS}
         q = {a: window_quality(s, start, end, et) for a, s in win.items()}
         ok = {a: (q[a][0] <= max_miss and q[a][1] >= MIN_PRE_BARS) for a in win}
+        usd_src = "dollaridx"
+        if not ok["usd"]:  # USD proxy fallback: EUR/USD with the sign inverted (price 1/EURUSD)
+            eur = load_window(ev["event_id"], "eurusd", start, end)
+            qe = window_quality(eur, start, end, et)
+            if qe[0] <= max_miss and qe[1] >= MIN_PRE_BARS:
+                win["usd"], q["usd"], ok["usd"], usd_src = 1.0 / eur, qe, True, "eurusd_inv"
         qual.append({"event_id": ev["event_id"], "type": ev["type"], "year": ev["trading_day"][:4],
-                     **{f"miss_{a}": q[a][0] for a in win}, **{f"ok_{a}": ok[a] for a in win}})
+                     **{f"miss_{a}": q[a][0] for a in win}, **{f"ok_{a}": ok[a] for a in win}, "usd_source": usd_src if ok["usd"] else "daily"})
         base = daily.loc[ev["event_id"]].to_dict() if ev["event_id"] in daily.index else None
         if not ok["gold"]:
             if base is not None:

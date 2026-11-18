@@ -46,7 +46,8 @@ class RCDGNN(nn.Module):
         B, L, N, F = X.shape
         h = self.node_enc(X.reshape(B * L, N, F))                    # all days at once
         delta = gate = None
-        if self.rc:
+        # batch["no_event_edges"] = True gives the counterfactual graph without the event change
+        if self.rc and not batch.get("no_event_edges", False):
             se = torch.cat([S, E], dim=-1).reshape(B * L, -1)
             delta, gate = self.edge_gen(se)
         A = self.graph.adjacency(h, delta, gate)                      # (B*L, N, N)
@@ -56,7 +57,7 @@ class RCDGNN(nn.Module):
         parts = [out, G] + ([E[:, -1]] if self.use_e else [])
         logit = self.head(torch.cat(parts, dim=-1))
         A = A.reshape(B, L, N, N)
-        if self.rc:
+        if delta is not None:
             eff = (gate * delta).reshape(B, L, N, N)
             penalty = self.l1 * eff.abs().mean()
             gate_last = gate.reshape(B, L)[:, -1]

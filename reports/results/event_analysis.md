@@ -1,0 +1,36 @@
+# Event analysis (mean ± std over seeds)
+
+Post-event = the trading day after an event of that type (test set). Stress periods: COVID Feb–Apr 2020 lies in the validation split; 2022 hikes in test.
+
+| variant            | subset                  |   n | acc           | mcc            | brier         | logloss       |
+|:-------------------|:------------------------|----:|:--------------|:---------------|:--------------|:--------------|
+| baseline_majority  | post_event_FOMC         |  36 | 0.417 ± 0.000 | 0.000 ± 0.000  | 0.251 ± 0.000 | 0.695 ± 0.000 |
+| baseline_majority  | post_event_CPI          |  53 | 0.396 ± 0.000 | 0.000 ± 0.000  | 0.251 ± 0.000 | 0.696 ± 0.000 |
+| baseline_majority  | post_event_NFP          |  53 | 0.566 ± 0.000 | 0.000 ± 0.000  | 0.249 ± 0.000 | 0.692 ± 0.000 |
+| baseline_majority  | covid_2020-02_04 (val)  |  63 | 0.571 ± 0.000 | 0.000 ± 0.000  | 0.249 ± 0.000 | 0.691 ± 0.000 |
+| baseline_majority  | hikes_2022-03_12 (test) | 217 | 0.498 ± 0.000 | 0.000 ± 0.000  | 0.250 ± 0.000 | 0.693 ± 0.000 |
+| baseline_logreg    | post_event_FOMC         |  36 | 0.389 ± 0.000 | -0.216 ± 0.000 | 0.256 ± 0.000 | 0.706 ± 0.000 |
+| baseline_logreg    | post_event_CPI          |  53 | 0.472 ± 0.000 | -0.070 ± 0.000 | 0.256 ± 0.000 | 0.706 ± 0.000 |
+| baseline_logreg    | post_event_NFP          |  53 | 0.604 ± 0.000 | 0.217 ± 0.000  | 0.240 ± 0.000 | 0.674 ± 0.000 |
+| baseline_logreg    | covid_2020-02_04 (val)  |  63 | 0.460 ± 0.000 | -0.073 ± 0.000 | 0.255 ± 0.000 | 0.705 ± 0.000 |
+| baseline_logreg    | hikes_2022-03_12 (test) | 217 | 0.493 ± 0.000 | -0.017 ± 0.000 | 0.249 ± 0.000 | 0.691 ± 0.000 |
+| baseline_lstm      | post_event_FOMC         |  36 | 0.489 ± 0.033 | 0.160 ± 0.068  | 0.251 ± 0.001 | 0.696 ± 0.002 |
+| baseline_lstm      | post_event_CPI          |  53 | 0.415 ± 0.024 | -0.002 ± 0.109 | 0.253 ± 0.001 | 0.700 ± 0.003 |
+| baseline_lstm      | post_event_NFP          |  53 | 0.574 ± 0.031 | 0.074 ± 0.103  | 0.249 ± 0.001 | 0.691 ± 0.003 |
+| baseline_lstm      | covid_2020-02_04 (val)  |  63 | 0.549 ± 0.036 | 0.040 ± 0.093  | 0.249 ± 0.001 | 0.691 ± 0.001 |
+| baseline_lstm      | hikes_2022-03_12 (test) | 217 | 0.514 ± 0.018 | 0.042 ± 0.048  | 0.250 ± 0.000 | 0.693 ± 0.001 |
+| baseline_lstm_news | post_event_FOMC         |  36 | 0.489 ± 0.080 | 0.105 ± 0.159  | 0.256 ± 0.009 | 0.705 ± 0.019 |
+| baseline_lstm_news | post_event_CPI          |  53 | 0.442 ± 0.059 | -0.056 ± 0.096 | 0.257 ± 0.004 | 0.707 ± 0.007 |
+| baseline_lstm_news | post_event_NFP          |  53 | 0.562 ± 0.038 | 0.039 ± 0.117  | 0.248 ± 0.001 | 0.690 ± 0.002 |
+| baseline_lstm_news | covid_2020-02_04 (val)  |  63 | 0.562 ± 0.022 | 0.068 ± 0.036  | 0.249 ± 0.002 | 0.691 ± 0.004 |
+| baseline_lstm_news | hikes_2022-03_12 (test) | 217 | 0.521 ± 0.015 | 0.048 ± 0.037  | 0.251 ± 0.001 | 0.695 ± 0.003 |
+| static_gnn         | post_event_FOMC         |  36 | 0.461 ± 0.087 | 0.025 ± 0.193  | 0.253 ± 0.005 | 0.700 ± 0.009 |
+| static_gnn         | post_event_CPI          |  53 | 0.468 ± 0.117 | 0.075 ± 0.165  | 0.254 ± 0.005 | 0.702 ± 0.010 |
+| static_gnn         | post_event_NFP          |  53 | 0.547 ± 0.046 | 0.031 ± 0.101  | 0.249 ± 0.002 | 0.692 ± 0.005 |
+| static_gnn         | covid_2020-02_04 (val)  |  63 | 0.565 ± 0.041 | 0.028 ± 0.147  | 0.250 ± 0.005 | 0.694 ± 0.010 |
+| static_gnn         | hikes_2022-03_12 (test) | 217 | 0.513 ± 0.017 | 0.041 ± 0.046  | 0.250 ± 0.002 | 0.693 ± 0.004 |
+| rcdgnn_daily       | post_event_FOMC         |  36 | 0.400 ± 0.045 | -0.101 ± 0.183 | 0.261 ± 0.005 | 0.716 ± 0.010 |
+| rcdgnn_daily       | post_event_CPI          |  53 | 0.491 ± 0.069 | 0.018 ± 0.090  | 0.250 ± 0.004 | 0.694 ± 0.007 |
+| rcdgnn_daily       | post_event_NFP          |  53 | 0.562 ± 0.014 | 0.098 ± 0.044  | 0.248 ± 0.001 | 0.689 ± 0.002 |
+| rcdgnn_daily       | covid_2020-02_04 (val)  |  63 | 0.571 ± 0.053 | 0.090 ± 0.119  | 0.250 ± 0.001 | 0.692 ± 0.003 |
+| rcdgnn_daily       | hikes_2022-03_12 (test) | 217 | 0.500 ± 0.026 | 0.009 ± 0.060  | 0.251 ± 0.001 | 0.695 ± 0.001 |
