@@ -4,7 +4,7 @@
 Current phase: 7 (intraday signatures) — 1-min download running in background
 
 ## Decisions
-- D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates.
+- D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates. **Update:** key added later; the API's vintage dates were cross-checked against the scraped ALFRED list for 2012-10 → 2026-06: CPIAUCSL 174 = 174, PAYEMS 165 = 165, no differences.
 - D0.2 Removed duplicate configs `rc_dgnn_daily.yaml` / `rc_dgnn_intraday.yaml` (superseded by `rcdgnn_daily` / `rcdgnn_full`). Added `baseline_majority`, `baseline_logreg`.
 - D0.3 Python 3.11 venv in `.venv` (system default is 3.12; plan asks for 3.11).
 
