@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 9 (dashboard)
+Current phase: 10 (docs)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates. **Update:** key added later; the API's vintage dates were cross-checked against the scraped ALFRED list for 2012-10 → 2026-06: CPIAUCSL 174 = 174, PAYEMS 165 = 165, no differences.
@@ -87,3 +87,7 @@ RC-DGNN (daily signature) does **not** beat the static GNN on all days or on pos
 - Why daily ≈ full: the signature files differ, but predictions differ by < 0.001 because the learned event edge change is tiny (largest mean test-event ΔA −0.0077 on weights ≈ 0.2; permutation importance of every signature feature ≈ 0; only the event embedding in the head has any (tiny) effect).
 - D8.1 Diagnostic (labelled, not used to choose the model): L1 = 0 → ΔA ~5× larger (event-day mean |ΔA| 0.012, max 0.11) but val log loss unchanged (0.6927/0.6928), test acc 0.515. The null result is **not** caused by the penalty. Runs kept in `reports/results/_tuning/`.
 - Backtest (simplified, not evidence of profit): no model beats buy-and-hold (Sharpe 0.96); RC-DGNN Sharpe −0.53.
+
+## Phase 9: dashboard ✅
+- `streamlit run app/dashboard.py` (or `make dashboard`): Forecast (P(up), MC band, regime, last event + days since, outcome), Graph (5-node graph day before / event day / selected day + event-driven ΔA table), Event explorer (1-min gold path with checkpoints, signature, expected vs actual), Results (SUMMARY, tables, calibration, graph and importance figures). Reads saved files only.
+- Verified with Streamlit `AppTest`: all 4 pages × 2 models run with 0 exceptions, 0.2–1.2 s per page (< 5 s).
