@@ -134,3 +134,12 @@ def test_event_signatures_and_decay_are_causal(daily_ext):
     pd.testing.assert_frame_equal(full.loc[:cut], part)
     exp = json.loads(paths.EXPECTED_REACTIONS.read_text())
     assert exp["_fitted_on"]["last_event_day"] <= CFG["split"]["train_end"]
+
+
+def test_event_embedding_pca_fitted_on_train_only():
+    """PCA of the FinBERT embeddings is fitted on train events only; one row per event, no NaNs."""
+    meta = json.loads((paths.PROCESSED / "event_emb_meta.json").read_text())
+    assert meta["pca_fit_last_day"] <= CFG["split"]["train_end"]
+    emb = pd.read_parquet(paths.EVENT_EMB)
+    ev = pd.read_csv(paths.EVENTS_CSV)
+    assert len(emb) == len(ev) and emb["event_id"].is_unique and not emb.isna().any().any()

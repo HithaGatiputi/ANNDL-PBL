@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 5 (FinBERT)
+Current phase: 6 (static GNN, RC-DGNN)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates.
@@ -49,3 +49,9 @@ No baseline > 60% (no leakage alarm). LSTM early-stops at epochs 0–5: there is
 - Decisions: D4.1 magnitudes = move ÷ (pre-event σ·√steps) so 1-min and daily magnitudes share a unit (plan says "move ÷ pre-event std"; the √time keeps intraday/daily-fallback rows comparable). D4.2 continuous signature features are divided by their train-event std (no centering, so 0 still means "no event"). D4.3 on days with 2 events the later release is used for the decayed day signature. D4.4 daily proxy uses the 20-day vol at t−1 as "pre-event" vol.
 - Known events (daily proxy, close t−1→t): 2013-06-19 gold −1.11σ, USD +2.09σ, equities −1.61σ ✓ (taper tantrum). 2020-03-15 (→ 3/16) gold −0.57σ, equities −2.89σ, USD −0.96σ. **2022-06-15: gold +1.45σ, USD −0.60σ** — the plan expected USD up; the data (DXY close 105.52 → 105.16) shows USD *fell* close-to-close that day. Reported as-is; the intraday check is in Phase 7.
 - Tests: synthetic-path test (latency 3 min, magnitudes, persistence 0.5) ✓; new leakage test: event signature & decay causal, expected reactions train-only ✓. `pytest`: 11 passed.
+
+## Phase 5: FinBERT embeddings + news baseline ✅
+- ProsusAI/finbert frozen; statements chunked ≤512 tokens, mean-pooled [CLS]. PCA 768→16 fit on 225 train events (explains 95.5%), components ÷ train std. `event_emb.parquet`: 433 rows, no NaNs (test added). Decayed daily version: 16 emb + 3 sentiment.
+- Mean sentiment: CPI neg 0.69 (template text "index X vs prior Y" reads as negative to FinBERT — the CPI/NFP texts carry little semantic content; noted as a limitation), FOMC neutral 0.70, NFP neutral 0.59.
+- `baseline_lstm_news` (4,788 params): test acc **0.536 ± 0.011**, MCC 0.044 (vs baseline_lstm 0.538 ± 0.005).
+- Intraday 1-min download for Phase 7 started in the background (~25 files/min).
