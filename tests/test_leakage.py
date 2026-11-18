@@ -143,3 +143,17 @@ def test_event_embedding_pca_fitted_on_train_only():
     emb = pd.read_parquet(paths.EVENT_EMB)
     ev = pd.read_csv(paths.EVENTS_CSV)
     assert len(emb) == len(ev) and emb["event_id"].is_unique and not emb.isna().any().any()
+
+
+def test_intraday_windows_end_at_day_t_close():
+    """Every 1-minute bar used for an event ends by 17:00 ET of the event's trading day."""
+    from src.data.download_intraday import event_window_utc
+    from src.features.intraday_signature import load_window
+    ev = pd.read_csv(paths.EVENTS_CSV, parse_dates=["datetime_utc"])
+    for _, e in ev.iloc[::10].iterrows():
+        start, end = event_window_utc(e, CFG["reaction"]["pre_event_min"])
+        assert end == pd.Timestamp(f"{e['trading_day']} 17:00").tz_localize("America/New_York")
+        for a in ["gold", "usd", "equities", "oil"]:
+            s = load_window(e["event_id"], a, start, end)
+            if len(s):
+                assert s.index.max() <= end and s.index.min() >= start

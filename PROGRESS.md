@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## Status
-Current phase: 7 (intraday signatures) — 1-min download running in background
+Current phase: 8 (evaluation)
 
 ## Decisions
 - D0.1 `.env` exists but is empty (no `FRED_API_KEY`). Instead of blocking, FRED data is fetched from FRED/ALFRED's public keyless CSV endpoints (`fredgraph.csv`, `alfredgraph.csv`, ALFRED vintage list page). Same data as the API. If a key is added, the code uses the API path for vintage dates. **Update:** key added later; the API's vintage dates were cross-checked against the scraped ALFRED list for 2012-10 → 2026-06: CPIAUCSL 174 = 174, PAYEMS 165 = 165, no differences.
@@ -71,3 +71,12 @@ No baseline > 60% (no leakage alarm). LSTM early-stops at epochs 0–5: there is
 | rcdgnn_daily | 0.517 ± 0.010 | 0.017 | 0.250 | 0.492 ± 0.029 | 0.013 |
 
 RC-DGNN (daily signature) does **not** beat the static GNN on all days or on post-event days; all neural models are at or below the majority rate (0.533). Significance tests follow in Phase 8.
+
+## Phase 7: intraday signatures ✅
+- 1,732 m1 windows downloaded (433 events × gold/USD/US500/Brent), 0 failures; resumable. `dollaridxusd` has no Dukascopy data for most 2013–2017 days → EUR/USD (sign-inverted) fallback downloaded for 179 events (D7.1). USD source: dollar index 254, EUR/USD 172, daily proxy 7.
+- **Coverage (valid gold window): 98.4%** (CPI 98.8%, FOMC 99.1%, NFP 97.5%); per type × year in `scripts/phase7_checks.py` output (lowest cell NFP 2026 83% = 1 of 6). The 7 fallbacks include FOMC 2020-03-15 (Sunday 17:00, market shut → daily proxy, `has_intraday=0`). Cross-asset valid rate: USD 98.4%, equities 84.8%, oil 93.5% (poor windows keep the daily-proxy value). Bonds stay daily (limitation).
+- Intraday 2022-06-15 FOMC: gold fell in the first 5 min, rose by +1h and the close; USD (DXY m1) fell by 17:00 (−1.86σ) — consistent with the daily data, not with the plan's expectation of a USD rise.
+- Figure: `reports/figures/phase7_event_paths.png`. New leakage test: all intraday bars lie within [event−60 min, 17:00 ET of day t] ✓. `pytest`: 16 passed.
+- Latency (plan definition: |move| > 2 × pre-event 1-min σ) is ~1 minute for most events, so it carries little information (noted).
+
+**Second key comparison (test, 5 seeds):** rcdgnn_daily 0.517 ± 0.010 (MCC 0.017) vs **rcdgnn_full 0.516 ± 0.010 (MCC 0.016)**; post-event 0.492 vs 0.489. Intraday reaction data did not help.
