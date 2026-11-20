@@ -11,9 +11,8 @@ from src.evaluation.ablation import VARIANTS
 from src.evaluation.common import available, seed_preds
 from src.evaluation.metrics import compute_metrics
 from src.utils import paths
+from src.utils.config import load_config
 
-STRESS = {"covid_2020-02_04 (val)": ("2020-02-01", "2020-04-30", "val"),
-          "hikes_2022-03_12 (test)": ("2022-03-01", "2022-12-31", "test")}
 
 
 def post_event_types(dates: pd.Series) -> pd.Series:
@@ -41,6 +40,7 @@ def mean_std(frames: list[pd.DataFrame], mask_fn) -> dict:
 
 def main() -> None:
     """Write event_analysis.csv/.md and calibration.png."""
+    stress = {f"{k} ({v[2]})": tuple(v) for k, v in load_config("base")["eval"]["stress_periods"].items()}
     rows = []
     for v in available(VARIANTS):
         test = seed_preds(v, "test")
@@ -48,7 +48,7 @@ def main() -> None:
         for t in ["FOMC", "CPI", "NFP"]:
             rows.append({"variant": v, "subset": f"post_event_{t}",
                          **mean_std(test, lambda f, t=t: types.str.contains(t).values)})
-        for name, (a, b, split) in STRESS.items():
+        for name, (a, b, split) in stress.items():
             frames = seed_preds(v, split)
             rows.append({"variant": v, "subset": name,
                          **mean_std(frames, lambda f: ((f["date"] >= a) & (f["date"] <= b)).values)})

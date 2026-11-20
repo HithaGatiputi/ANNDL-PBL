@@ -104,3 +104,10 @@ RC-DGNN (daily signature) does **not** beat the static GNN on all days or on pos
 ## Phase 10: documentation and cleanup ✅
 - README updated (architecture as built, exact sources/dates, results table, findings, limitations incl. consensus-forecast and bond-intraday gaps). Docstrings added to every public function (AST check: 0 missing). `docs/VIVA_NOTES.md` written from actual results.
 - `make all` from raw data: data → features → 7 configs → evaluate → tests; outputs identical to the earlier run; `pytest` 16 passed.
+
+## Audit (2026-11-20) ✅
+- **Leakage re-checked:** no event after its day-t 17:00 ET cutoff; no hidden NaN/inf in processed features; extreme returns are real (gold −9.6% 2013-04-15, Brent −28% Mar-2020).
+- **Suspicious logreg backtest (66% hit rate on 150 long days) investigated — not leakage.** Truncation tests pass; gold returns have no lag-1 autocorrelation (train −0.009, test 0.006), so no stale-close artifact; 105 of 150 long days fall in the 2025–26 rally and the same rule shows no edge on validation (56.1% vs 55.1% base). Rally coincidence, not skill.
+- **Fixed: config values silently ignored.** `compute_signature` hard-coded latency 2σ, checkpoints 5/60 min and persistence clip ±2 while `base.yaml` had `latency_threshold_std`, `checkpoints_min`, `persistence_clip`. Now read from config. Also moved to config: min pre-event bars, download end date, stress periods, permutation repeats, test-start date (graph_viz, dashboard), vintage scan start, close hour in `align`. Stale `rc_dgnn` docstring fixed. New test: changing the config changes the signature.
+- Rebuilt data/events/signatures: byte-identical to before → model results unchanged; `make evaluate` outputs unchanged; `pytest` 17 passed.
+- Note (not a leak): FRED DGS10 for day t is the ~15:30 ET market yield, so it is valid at 17:00, but the official number is published after 17:00 — a live system would need a real-time yield feed.

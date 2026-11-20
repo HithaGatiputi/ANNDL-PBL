@@ -141,7 +141,8 @@ def vintage_values(series: str, vdate: str) -> pd.Series:
 def build_macro(series: str, etype: str, template: str, cfg: dict) -> tuple[pd.DataFrame, list[str]]:
     """Monthly releases for one series (vintages that add a new observation month)."""
     start, end = cfg["data"]["start"], cfg["data"]["end"]
-    vds = [v for v in vintage_dates(series) if "2012-10-01" <= v <= end]
+    scan_from = (pd.Timestamp(start) - pd.DateOffset(months=3)).strftime("%Y-%m-%d")  # to know the last month before start
+    vds = [v for v in vintage_dates(series) if scan_from <= v <= end]
     rows, notes, last_obs = [], [], None
     for v in vds:
         s = vintage_values(series, v)

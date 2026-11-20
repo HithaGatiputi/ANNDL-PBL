@@ -51,3 +51,17 @@ def test_rsi_bounds():
     s = pd.Series(np.exp(np.cumsum(np.random.default_rng(0).normal(0, 0.01, 300))))
     r = rsi(s).dropna()
     assert ((r >= 0) & (r <= 100)).all()
+
+
+def test_signature_reads_thresholds_from_config():
+    """Changing the config's latency threshold / persistence clip must change the SYNTHETIC result
+    (guards against hard-coded numbers silently ignoring the config)."""
+    from src.utils.config import load_config
+    path, t0, sigma = _synthetic_path()
+    sd = np.log(path[path.index <= t0]).diff().dropna().std()
+    params = dict(load_config("base")["reaction"])
+    params["latency_threshold_std"] = 50.0      # never reached -> latency capped at window length
+    params["persistence_clip"] = 0.25
+    sig = compute_signature({"gold": path}, t0, {"gold": sd}, ["5m", "1h", "close"], None, params)
+    assert sig["latency_min"] == 180.0
+    np.testing.assert_allclose(sig["persistence"], 0.25)

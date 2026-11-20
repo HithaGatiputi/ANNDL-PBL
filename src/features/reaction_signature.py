@@ -25,7 +25,6 @@ from src.utils.config import load_config
 ASSETS = ["gold", "usd", "equities", "oil"]
 CROSS = ["usd", "equities", "oil"]
 TYPES = ["FOMC", "CPI", "NFP"]
-CHECKPOINT_NAMES = {5: "5m", 60: "1h"}
 # continuous features that are scaled by their train-event std (no centering, so 0 = no reaction)
 CONT = ["latency_min", "mag_5m", "mag_1h", "mag_close", "vol_ratio", "persistence", "gap_gold"] + \
        [f"xa_{a}_mag" for a in CROSS]
@@ -39,7 +38,7 @@ def _price_at(path: pd.Series, t: pd.Timestamp) -> float:
 
 
 def compute_signature(paths: dict[str, pd.Series], event_time, pre_vol: dict[str, float],
-                      checkpoints: list[str], expected: dict | None) -> dict[str, float]:
+                      checkpoints: list[str], expected: dict | None, params: dict | None = None) -> dict[str, float]:
     """paths[asset] = price series from 60 min before the event to the end of the window.
        Returns a flat dict of signature features.
 
@@ -47,7 +46,13 @@ def compute_signature(paths: dict[str, pd.Series], event_time, pre_vol: dict[str
     (previous close, today's close); otherwise as 1-minute data.
     pre_vol[asset]: std of log returns per path step before the event (per minute or per day).
     expected: {"mag_close": float} for this event type (train mean), or None.
+    params: the config's `reaction` section (latency_threshold_std, persistence_clip,
+            checkpoints_min); base.yaml is read when not given.
     """
+    if params is None:
+        params = load_config("base")["reaction"]
+    k_lat, clip = params["latency_threshold_std"], params["persistence_clip"]
+    cp_short, cp_long = params["checkpoints_min"]
     event_time = pd.Timestamp(event_time)
     gold = paths["gold"].dropna()
     intraday = len(gold) > 2
@@ -62,7 +67,7 @@ def compute_signature(paths: dict[str, pd.Series], event_time, pre_vol: dict[str
         return move / (sd * np.sqrt(steps)) if sd > 0 else np.nan
 
     # direction and magnitude at each checkpoint
-    for name, minutes in [("5m", 5), ("1h", 60)]:
+    for name, minutes in [("5m", cp_short), ("1h", cp_long)]:
         if name in checkpoints and intraday:
             mv = np.log(_price_at(gold, event_time + pd.Timedelta(minutes=minutes)) / p0)
             sig[f"dir_{name}"], sig[f"mag_{name}"] = float(np.sign(mv)), mag(mv, minutes)
@@ -75,12 +80,12 @@ def compute_signature(paths: dict[str, pd.Series], event_time, pre_vol: dict[str
     if intraday:
         post = gold[gold.index > event_time]
         rel = np.abs(np.log(post / p0))
-        hit = rel[rel > 2.0 * sd]  # threshold = latency_threshold_std x pre-event 1-min std
+        hit = rel[rel > k_lat * sd]  # threshold = latency_threshold_std x pre-event 1-min std
         sig["latency_min"] = float((hit.index[0] - event_time).total_seconds() / 60) if len(hit) else float(close_min)
         post_ret = np.log(post).diff().dropna()
         sig["vol_ratio"] = float(post_ret.std() / sd) if sd > 0 and len(post_ret) > 2 else np.nan
-        mv_1h = np.log(_price_at(gold, event_time + pd.Timedelta(minutes=60)) / p0)
-        sig["persistence"] = float(np.clip(mv_close / mv_1h, -2, 2)) if mv_1h != 0 else np.nan
+        mv_1h = np.log(_price_at(gold, event_time + pd.Timedelta(minutes=cp_long)) / p0)
+        sig["persistence"] = float(np.clip(mv_close / mv_1h, -clip, clip)) if mv_1h != 0 else np.nan
     else:
         sig["latency_min"] = np.nan
         sig["vol_ratio"] = abs(mv_close) / sd if sd > 0 else np.nan
@@ -134,7 +139,7 @@ def event_signatures_daily(events: pd.DataFrame, cfg: dict, daily: pd.DataFrame 
         p, pre = inp
         # event_time for the daily proxy = start of the day-t session (just after the t-1 close)
         et = p["gold"].index[0] + pd.Timedelta(seconds=1)
-        rows.append({"event_id": ev["event_id"], **compute_signature(p, et, pre, ["close"], None)})
+        rows.append({"event_id": ev["event_id"], **compute_signature(p, et, pre, ["close"], None, cfg["reaction"])})
     return pd.DataFrame(rows)
 
 

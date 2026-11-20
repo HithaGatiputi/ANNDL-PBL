@@ -58,7 +58,7 @@ def main() -> None:
     """Download everything daily."""
     cfg = load_config("base")
     paths.ensure_dirs()
-    start, end = cfg["data"]["download_start"], "2026-07-10"
+    start, end = cfg["data"]["download_start"], cfg["data"]["download_end"]
     for name, ticker in YAHOO.items():
         download_yahoo(name, ticker, start, end)
     out = paths.RAW_DAILY / "bonds_DGS10.csv"

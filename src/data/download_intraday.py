@@ -58,7 +58,7 @@ def download_gold_hourly(cfg: dict) -> None:
         if out.exists():
             continue
         # one extra week so the last trading day of the period has t+1
-        to = f"{year + 1}-01-01" if year < end_year else "2026-07-08"
+        to = f"{year + 1}-01-01" if year < end_year else cfg["data"]["download_end"]
         ok = dukascopy_download("xauusd", f"{year}-01-01", to, "h1", out)
         print(f"xauusd h1 {year}: {'ok' if ok else 'FAILED'}")
 
@@ -102,7 +102,7 @@ def download_usd_fallback(cfg: dict) -> None:
         miss, n_pre = window_quality(load_window(ev["event_id"], "usd", start, end), start, end,
                                      pd.Timestamp(ev["datetime_utc"]))
         out = paths.RAW_INTRADAY / f"{ev['event_id']}_eurusd.csv"
-        if (miss > max_miss or n_pre < 30) and not out.exists():
+        if (miss > max_miss or n_pre < cfg["reaction"]["min_pre_bars"]) and not out.exists():
             dukascopy_download("eurusd", start.strftime("%Y-%m-%d"),
                                (end + pd.Timedelta(days=1)).strftime("%Y-%m-%d"), "m1", out)
             n += 1

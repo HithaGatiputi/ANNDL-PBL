@@ -61,7 +61,7 @@ def _yahoo_close(name: str) -> pd.Series:
 
 def build_table(cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (daily_ext, daily) tables."""
-    gold = gold_close_1700(load_gold_hourly())
+    gold = gold_close_1700(load_gold_hourly(), int(cfg["data"]["close_time_ny"][:2]))
     gold.to_frame().to_parquet(paths.GOLD_CLOSE_PARQUET)
     cal = gold.index
     lim = cfg["data"]["max_ffill_days"]

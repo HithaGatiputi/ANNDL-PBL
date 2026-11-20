@@ -8,6 +8,7 @@ data:
   news_cutoff_ny: "17:00"      # text after this -> next trading day
   max_ffill_days: 2            # forward-fill limit for non-gold series
   download_start: "2012-06-01" # extra history so rolling features exist on 2013-01-01
+  download_end: "2026-07-10"   # a few days past data.end so the last day has t+1
 split:                         # fixed, time-ordered
   train_end: "2019-12-31"
   val_end: "2021-12-31"
@@ -64,6 +65,7 @@ reaction:
   decay_lambda: 0.3
   decay_max_days: 10
   max_missing_frac: 0.2        # intraday window flagged if >20% minutes missing
+  min_pre_bars: 30             # need >= 30 one-minute bars before the event to estimate pre-event vol
   cross_assets: [usd, equities, oil]
 events:
   fomc_time_ny: "14:00"
@@ -77,3 +79,7 @@ eval:
   ece_bins: 10
   backtest_threshold: 0.55
   backtest_cost_bp: 2
+  perm_repeats: 5              # permutation-importance repeats
+  stress_periods:              # name: [start, end, split]
+    covid_2020-02_04: ["2020-02-01", "2020-04-30", "val"]
+    hikes_2022-03_12: ["2022-03-01", "2022-12-31", "test"]

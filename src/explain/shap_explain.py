@@ -17,8 +17,8 @@ from sklearn.metrics import log_loss
 
 from src.evaluation.common import available, forward_days, load_models
 from src.utils import paths
+from src.utils.config import load_config
 
-REPEATS = 5
 
 
 def main() -> None:
@@ -29,6 +29,7 @@ def main() -> None:
     y = d.y[va]
     base = log_loss(y, forward_days(models, d, va)["p_up"], labels=[0, 1])
     rng = np.random.default_rng(0)
+    repeats = load_config("base")["eval"]["perm_repeats"]
     groups = {c: ("S", [j]) for j, c in enumerate(d.s_cols)}
     groups["event_embedding(16)"] = ("E", [j for j, c in enumerate(d.e_cols) if c.startswith("emb_")])
     groups["finbert_sentiment(3)"] = ("E", [j for j, c in enumerate(d.e_cols) if c.startswith("sent_")])
@@ -36,7 +37,7 @@ def main() -> None:
     for name, (arr, cols) in groups.items():
         orig = getattr(d, arr)
         inc = []
-        for _ in range(REPEATS):
+        for _ in range(repeats):
             perm = rng.permutation(len(va))
             new = orig.copy()
             new[np.ix_(va, np.arange(new.shape[1]), cols)] = orig[np.ix_(va[perm], np.arange(new.shape[1]), cols)]

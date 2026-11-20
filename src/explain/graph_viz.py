@@ -34,10 +34,10 @@ def heat(ax, A, title, diff=False):
     plt.colorbar(im, ax=ax, fraction=0.046)
 
 
-def pick_events(variant_sig: str) -> list[str]:
+def pick_events(variant_sig: str, val_end: str) -> list[str]:
     """Two named FOMC events plus the test CPI and NFP events with the largest |reaction gap|."""
     sig = pd.read_csv(paths.PROCESSED / f"event_signatures_{variant_sig}.csv")
-    test = sig[sig["trading_day"] >= "2022-01-01"]
+    test = sig[sig["trading_day"] > val_end]
     out = ["FOMC_20200315", "FOMC_20220615"]
     for t in ["CPI", "NFP"]:
         sub = test[test["type"] == t]
@@ -58,7 +58,7 @@ def main() -> None:
     mode = "intraday" if variant == "rcdgnn_full" else "daily"
     ev = pd.read_csv(paths.EVENTS_CSV)
     pos = {dt: i for i, dt in enumerate(dates)}
-    for eid in pick_events(mode):
+    for eid in pick_events(mode, cfg["split"]["val_end"]):
         td = pd.Timestamp(ev.loc[ev["event_id"] == eid, "trading_day"].iloc[0])
         i = pos[td]
         fig, ax = plt.subplots(1, 3, figsize=(13, 4))
@@ -69,7 +69,7 @@ def main() -> None:
         plt.tight_layout(); plt.savefig(paths.FIGURES / f"graph_change_{eid}.png", dpi=110); plt.close(fig)
         print(f"saved graph_change_{eid}.png")
     # average event-driven change per event type on test event days
-    test_ev = ev[ev["trading_day"] >= cfg["split"]["val_end"]]
+    test_ev = ev[ev["trading_day"] > cfg["split"]["val_end"]]
     fig, ax = plt.subplots(1, 3, figsize=(13, 4))
     rows = []
     for k, t in enumerate(["FOMC", "CPI", "NFP"]):

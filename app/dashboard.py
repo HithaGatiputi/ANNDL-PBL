@@ -16,6 +16,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from src.utils import paths  # noqa: E402
+from src.utils.config import load_config  # noqa: E402
 
 NODES = ["Gold", "USD", "Bonds", "Equities", "Oil"]
 MODELS = ["rcdgnn_full", "rcdgnn_daily", "static_gnn", "baseline_lstm_news", "baseline_lstm"]
@@ -109,7 +110,8 @@ elif page == "Graph":
         st.warning("Run `make evaluate` first.")
     else:
         dates = pd.to_datetime(g["dates"])
-        test_dates = [x.date() for x in dates if x >= pd.Timestamp("2022-01-01")]
+        val_end = pd.Timestamp(load_config("base")["split"]["val_end"])
+        test_dates = [x.date() for x in dates if x > val_end]
         d = st.selectbox("Date", test_dates[::-1])
         i = int(np.where(dates == pd.Timestamp(d))[0][0])
         ev = load_events()

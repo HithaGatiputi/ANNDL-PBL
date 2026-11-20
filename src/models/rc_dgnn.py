@@ -1,12 +1,13 @@
 """RC-DGNN: Reaction-Conditioned Dynamic Graph Neural Network.
 
 For each day tau of the 30-day window:
-  h_tau     = Linear(F -> 32)(X_nodes[:, tau])                      node encoding (B, 5, 32)
+  h_tau     = Linear(F -> node_hidden)(X_nodes[:, tau])             node encoding (B, 5, node_hidden=16)
   dA, gate  = EdgeGenerator([S_tau, E_tau])                         event-driven edge change
   A_tau     = softmax_rows(A_static + gate * dA + GAT(h_tau))
   h_tau     = 2 x [ELU(A_tau @ W h_tau) + h_tau]                    residual graph layers
-  z_tau     = [h_tau[gold], mean_nodes(h_tau)]                      (B, 64)
-LSTM(64 -> 64) over z_1..z_L, head MLP([lstm_out, G, E_t] -> 32 -> 1).
+  z_tau     = [h_tau[gold], mean_nodes(h_tau)]                      (B, 2*node_hidden)
+LSTM(2*node_hidden -> hidden) over z_1..z_L, head MLP([lstm_out, G, E_t] -> head_hidden -> 1).
+Sizes come from configs/base.yaml (16 after the validation-based overfitting fix, PROGRESS D6.2).
 Static variant (reaction_conditioned = false): dA = 0 and gate = 0.
 Penalty: L1 on the effective edge change gate * dA.
 """

@@ -2,7 +2,7 @@
 
 Window per event: 60 minutes before the release to 17:00 ET on its trading day.
 Gold window flagged (-> daily signature, has_intraday = 0) if > max_missing_frac of the minutes
-are missing or there are fewer than 30 pre-event bars (e.g. a release while the market is shut).
+are missing or there are fewer than `min_pre_bars` pre-event bars (e.g. a release while the market is shut).
 A cross asset with a poor window keeps its daily-proxy value. Bonds stay daily (no free intraday yields).
 """
 from __future__ import annotations
@@ -14,7 +14,6 @@ from src.data.download_intraday import event_window_utc
 from src.features.reaction_signature import CROSS, compute_signature, event_signatures_daily
 from src.utils import paths
 
-MIN_PRE_BARS = 30
 
 
 def load_window(event_id: str, asset: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.Series:
@@ -41,18 +40,19 @@ def event_signatures_intraday(events: pd.DataFrame, cfg: dict, return_quality: b
     daily = event_signatures_daily(events, cfg).set_index("event_id")
     max_miss = cfg["reaction"]["max_missing_frac"]
     pre_min = cfg["reaction"]["pre_event_min"]
+    min_pre = cfg["reaction"]["min_pre_bars"]
     rows, qual = [], []
     for _, ev in events.iterrows():
         start, end = event_window_utc(ev, pre_min)
         et = pd.Timestamp(ev["datetime_utc"])
         win = {a: load_window(ev["event_id"], a, start, end) for a in ["gold"] + CROSS}
         q = {a: window_quality(s, start, end, et) for a, s in win.items()}
-        ok = {a: (q[a][0] <= max_miss and q[a][1] >= MIN_PRE_BARS) for a in win}
+        ok = {a: (q[a][0] <= max_miss and q[a][1] >= min_pre) for a in win}
         usd_src = "dollaridx"
         if not ok["usd"]:  # USD proxy fallback: EUR/USD with the sign inverted (price 1/EURUSD)
             eur = load_window(ev["event_id"], "eurusd", start, end)
             qe = window_quality(eur, start, end, et)
-            if qe[0] <= max_miss and qe[1] >= MIN_PRE_BARS:
+            if qe[0] <= max_miss and qe[1] >= min_pre:
                 win["usd"], q["usd"], ok["usd"], usd_src = 1.0 / eur, qe, True, "eurusd_inv"
         qual.append({"event_id": ev["event_id"], "type": ev["type"], "year": ev["trading_day"][:4],
                      **{f"miss_{a}": q[a][0] for a in win}, **{f"ok_{a}": ok[a] for a in win}, "usd_source": usd_src if ok["usd"] else "daily"})
@@ -65,7 +65,8 @@ def event_signatures_intraday(events: pd.DataFrame, cfg: dict, return_quality: b
         for a, s in win.items():
             r = np.log(s[s.index <= et]).diff().dropna()
             pre_vol[a] = float(r.std()) if ok[a] and len(r) > 5 else 0.0
-        sig = compute_signature({a: s for a, s in win.items() if ok[a]}, et, pre_vol, ["5m", "1h", "close"], None)
+        sig = compute_signature({a: s for a, s in win.items() if ok[a]}, et, pre_vol, ["5m", "1h", "close"], None,
+                                cfg["reaction"])
         if base is not None:  # cross assets with poor intraday data keep the daily proxy
             for a in CROSS:
                 if not ok[a]:
